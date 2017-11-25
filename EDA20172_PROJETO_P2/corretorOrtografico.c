@@ -3,11 +3,16 @@
 * Projeto  - Arvores e funcoes de hash
 * Verifica corretude de palavras de um arquivo-texto segundo um dicionario carregado em RAM.
  *********************************************************************************************/
+
+/* IMPLEMENTACAO EM HASH TABLE */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
 /* Tamanho maximo de uma palavra do dicionario */
 #define TAM_MAX 45
@@ -21,19 +26,66 @@
 #define ARQTEXTO_ERROABERTURA   3
 #define ARQTEXTO_ERROLEITURA    4
 #define ERRO_DICIO_NAOCARREGADO 5
+#define TAM_HASH 1000000000
+
+int palavras_dic = 0;
+unsigned int hashs[150000];
+unsigned int hash_table[TAM_HASH] = {0};
+
+/* Funcao de Hash */
+unsigned int APHash(const char* str, unsigned int len) {
+    unsigned int hash = 0xAAAAAAAA;
+    unsigned int i = 0;
+
+    for(i = 0; i < len; str++, i++) {
+        hash ^= ((i & 1) == 0) ? ( (hash << 7) ^ (*str) * (hash >> 3)) :
+                                 (~((hash << 11) + ((*str) ^ (hash >> 5))));
+    }
+
+    return hash;
+} /* End Of APHash Function */
 
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
-
-    /* construa essa funcao */
-
+    // unsigned int hash;
+    // unsigned int tam_palavra;
+    //
+    // tam_palavra = strlen(palavra);
+    // hash = RSHash(palavra, tam_palavra);
+    //
+    // if(hash_table[hash] > 0)
+    //     return true;
+    //
     return false;
 } /* fim-conferePalavra */
 
 /* Carrega dicionario na memoria. Retorna true se sucesso; senao retorna false. */
 bool carregaDicionario(const char *dicionario) {
+    FILE *fd = fopen(dicionario, "r");
+    char palavra[TAM_MAX];
+    unsigned int tam_palavra;
+    unsigned int hash = 0;
+    unsigned int i = 0;
 
-    /* construa essa funcao */
+    printf("Chegou\n");
+
+    if(fd == NULL){
+        printf("Nao foi possivel abrir o arquivo dicionario %s\n", dicionario);
+        return false;
+    }
+
+    while(!feof(fd)){
+        fscanf(fd, "%s", palavra);
+        tam_palavra = strlen(palavra);
+        hash = APHash(palavra, tam_palavra);
+        printf("%d\n", hash);
+        hash_table[hash] +=1;
+        hashs[palavras_dic] = hash;
+        palavras_dic++;
+    }
+
+    if(feof(fd))
+        return true;
 
     return false;
 } /* fim-carregaDicionario */
@@ -41,17 +93,20 @@ bool carregaDicionario(const char *dicionario) {
 
 /* Retorna qtde palavras do dicionario, se carregado; senao carregado retorna zero */
 unsigned int contaPalavrasDic(void) {
-
-    /* construa essa funcao */
-
-    return 0;
+    return palavras_dic;
 } /* fim-contaPalavrasDic */
 
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
-
-    /* construa essa funcao */
+    // unsigned int i = 0;
+    //
+    // for(i = 0; i < palavras_dic; i++){
+    //     hash_table[hashs[i]] = 0;
+    // }
+    //
+    // if(i == palavras_dic)
+    //     return true;
 
     return false;
 } /* fim-descarregaDicionario */
