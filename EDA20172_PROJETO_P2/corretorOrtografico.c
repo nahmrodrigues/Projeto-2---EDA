@@ -33,17 +33,19 @@ unsigned int hashs[150000];
 unsigned int hash_table[TAM_HASH] = {0};
 
 /* Funcao de Hash */
-unsigned int APHash(const char* str, unsigned int len) {
-    unsigned int hash = 0xAAAAAAAA;
+unsigned int RSHash(const char* str, unsigned int len) {
+    unsigned int b = 378551;
+    unsigned int a = 63689;
+    unsigned int hash = 0;
     unsigned int i = 0;
 
     for(i = 0; i < len; str++, i++) {
-        hash ^= ((i & 1) == 0) ? ( (hash << 7) ^ (*str) * (hash >> 3)) :
-                                 (~((hash << 11) + ((*str) ^ (hash >> 5))));
+        hash = hash * a + (*str);
+        a = a * b;
     }
 
     return hash;
-} /* End Of APHash Function */
+} /* End of RSHash */
 
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
