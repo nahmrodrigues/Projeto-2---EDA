@@ -26,11 +26,25 @@
 #define ARQTEXTO_ERROABERTURA   3
 #define ARQTEXTO_ERROLEITURA    4
 #define ERRO_DICIO_NAOCARREGADO 5
-#define TAM_HASH 1000000000
+
+#define TAM_HASH 1000000
+
+typedef struct hash_table{
+    char palavra[TAM_MAX];
+    struct hash_table *prox;
+}HASH_TABLE;
 
 int palavras_dic = 0;
-unsigned int hashs[150000];
-unsigned int hash_table[TAM_HASH] = {0};
+HASH_TABLE **hash_table = (HASH_TABLE**)malloc(sizeof(HASH_TABLE*)*TAM_HASH);
+
+HASH_TABLE *adiciona_struct(HASH_TABLE *p, char *palavra){
+    HASH_TABLE *new=(HASH_TABLE*)malloc(sizeof(HASH_TABLE));
+
+    strcpy(new->palavra,palavra);
+    new->prox=NULL;
+
+    return new;
+}
 
 /* Funcao de Hash */
 unsigned int RSHash(const char* str, unsigned int len) {
@@ -79,10 +93,8 @@ bool carregaDicionario(const char *dicionario) {
     while(!feof(fd)){
         fscanf(fd, "%s", palavra);
         tam_palavra = strlen(palavra);
-        hash = APHash(palavra, tam_palavra);
-        printf("%d\n", hash);
-        hash_table[hash] +=1;
-        hashs[palavras_dic] = hash;
+        hash = RSHash(palavra, tam_palavra)%TAM_HASH;
+        hash_table[hash] = adiciona_struct(hash_table[hash], palavra);
         palavras_dic++;
     }
 
