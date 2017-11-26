@@ -4,6 +4,10 @@
 * Verifica corretude de palavras de um arquivo-texto segundo um dicionario carregado em RAM.
  *********************************************************************************************/
 
+ /* Maria Luiza - 16/0014433
+    Natalia Rodrigues - 16/0015839
+*/
+
 /* IMPLEMENTACAO EM HASH TABLE */
 
 #include <ctype.h>
@@ -35,8 +39,8 @@ typedef struct hash_table{
     struct hash_table *prox;
 }HASH_TABLE;
 
-int hashs[TAM_HASH];
-int palavras_dic = 0;
+unsigned int hashs[TAM_HASH];
+unsigned int palavras_dic = 0;
 HASH_TABLE **hash_table;
 
 HASH_TABLE *adiciona_struct(HASH_TABLE *p, char *palavra){
@@ -46,6 +50,13 @@ HASH_TABLE *adiciona_struct(HASH_TABLE *p, char *palavra){
     new->prox = p;
 
     return new;
+}
+
+void converte_minusculo(char *palavra, int tam_palavra){
+    unsigned int i;
+
+    for(i = 0; i < tam_palavra; i++)
+        palavra[i] = tolower(palavra[i]);
 }
 
 /* Funcao de Hash */
@@ -66,11 +77,15 @@ unsigned int RSHash(const char* str, unsigned int len) {
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
     unsigned int hash;
-    unsigned int tam_palavra;
+    unsigned int tam_string;
+    char string[TAM_MAX];
     HASH_TABLE *p;
 
-    tam_palavra = strlen(palavra);
-    hash = RSHash(palavra, tam_palavra) % TAM_HASH;
+    strcpy(string, palavra);
+
+    tam_string = strlen(string);
+    converte_minusculo(string, tam_string);
+    hash = RSHash(string, tam_string) % TAM_HASH;
 
     p = hash_table[hash];
 
@@ -94,8 +109,6 @@ bool carregaDicionario(const char *dicionario) {
 
     hash_table = (HASH_TABLE**)malloc(sizeof(HASH_TABLE*)*TAM_HASH);
 
-    printf("Chegou\n");
-
     if(fd == NULL){
         printf("Nao foi possivel abrir o arquivo dicionario %s\n", dicionario);
         return false;
@@ -104,6 +117,7 @@ bool carregaDicionario(const char *dicionario) {
     while(!feof(fd)){
         fscanf(fd, "%s", palavra);
         tam_palavra = strlen(palavra);
+        converte_minusculo(palavra, tam_palavra);
         hash = RSHash(palavra, tam_palavra) % TAM_HASH;
         hash_table[hash] = adiciona_struct(hash_table[hash], palavra);
         hashs[palavras_dic] = hash;
@@ -126,7 +140,7 @@ unsigned int contaPalavrasDic(void) {
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
     HASH_TABLE *p, *aux;
-    int i = 0;
+    unsigned int i = 0;
 
     while(i < palavras_dic){
         p = hash_table[hashs[i]];
