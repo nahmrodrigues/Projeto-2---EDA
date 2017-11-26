@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <strings.h>
 
 /* Tamanho maximo de uma palavra do dicionario */
 #define TAM_MAX 45
@@ -34,14 +35,15 @@ typedef struct hash_table{
     struct hash_table *prox;
 }HASH_TABLE;
 
+int hashs[TAM_HASH];
 int palavras_dic = 0;
-HASH_TABLE **hash_table = (HASH_TABLE**)malloc(sizeof(HASH_TABLE*)*TAM_HASH);
+HASH_TABLE **hash_table;
 
 HASH_TABLE *adiciona_struct(HASH_TABLE *p, char *palavra){
-    HASH_TABLE *new=(HASH_TABLE*)malloc(sizeof(HASH_TABLE));
+    HASH_TABLE *new = (HASH_TABLE*)malloc(sizeof(HASH_TABLE));
 
-    strcpy(new->palavra,palavra);
-    new->prox=NULL;
+    strcpy(new->palavra, palavra);
+    new->prox = p;
 
     return new;
 }
@@ -63,15 +65,22 @@ unsigned int RSHash(const char* str, unsigned int len) {
 
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
-    // unsigned int hash;
-    // unsigned int tam_palavra;
-    //
-    // tam_palavra = strlen(palavra);
-    // hash = RSHash(palavra, tam_palavra);
-    //
-    // if(hash_table[hash] > 0)
-    //     return true;
-    //
+    unsigned int hash;
+    unsigned int tam_palavra;
+    HASH_TABLE *p;
+
+    tam_palavra = strlen(palavra);
+    hash = RSHash(palavra, tam_palavra) % TAM_HASH;
+
+    p = hash_table[hash];
+
+    while(p != NULL){
+        if(strcasecmp(p->palavra, palavra) == 0)
+            return true;
+
+        p = p->prox;
+    }
+
     return false;
 } /* fim-conferePalavra */
 
@@ -83,6 +92,8 @@ bool carregaDicionario(const char *dicionario) {
     unsigned int hash = 0;
     unsigned int i = 0;
 
+    hash_table = (HASH_TABLE**)malloc(sizeof(HASH_TABLE*)*TAM_HASH);
+
     printf("Chegou\n");
 
     if(fd == NULL){
@@ -93,8 +104,9 @@ bool carregaDicionario(const char *dicionario) {
     while(!feof(fd)){
         fscanf(fd, "%s", palavra);
         tam_palavra = strlen(palavra);
-        hash = RSHash(palavra, tam_palavra)%TAM_HASH;
+        hash = RSHash(palavra, tam_palavra) % TAM_HASH;
         hash_table[hash] = adiciona_struct(hash_table[hash], palavra);
+        hashs[palavras_dic] = hash;
         palavras_dic++;
     }
 
@@ -113,14 +125,21 @@ unsigned int contaPalavrasDic(void) {
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
-    // unsigned int i = 0;
-    //
-    // for(i = 0; i < palavras_dic; i++){
-    //     hash_table[hashs[i]] = 0;
-    // }
-    //
-    // if(i == palavras_dic)
-    //     return true;
+    HASH_TABLE *p, *aux;
+    int i = 0;
+
+    while(i < palavras_dic){
+        p = hash_table[hashs[i]];
+        while(p != NULL){
+            aux = p->prox;
+            free(p);
+            p = aux;
+        }
+        i++;
+    }
+
+    if(i == palavras_dic)
+        return true;
 
     return false;
 } /* fim-descarregaDicionario */
