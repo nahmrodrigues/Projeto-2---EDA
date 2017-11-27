@@ -117,7 +117,6 @@ bool carregaDicionario(const char *dicionario) {
     while(!feof(fd)){
         fscanf(fd, "%s", palavra);
         tam_palavra = strlen(palavra);
-        converte_minusculo(palavra, tam_palavra);
         hash = RSHash(palavra, tam_palavra) % TAM_HASH;
         hash_table[hash] = adiciona_struct(hash_table[hash], palavra);
         hashs[palavras_dic] = hash;
@@ -133,7 +132,7 @@ bool carregaDicionario(const char *dicionario) {
 
 /* Retorna qtde palavras do dicionario, se carregado; senao carregado retorna zero */
 unsigned int contaPalavrasDic(void) {
-    return palavras_dic;
+    return palavras_dic - 1;
 } /* fim-contaPalavrasDic */
 
 
