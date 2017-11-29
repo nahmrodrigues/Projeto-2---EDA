@@ -5,6 +5,8 @@
  *********************************************************************************************/
 #include <ctype.h>
 #include <stdio.h>
+#include<stdlib.h>
+#include<string.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <stdbool.h>
@@ -26,9 +28,14 @@
 
 typedef struct arv {
     char info[TAM_MAX];
+    int fat;
     struct arv *esq;
     struct arv *dir;
 }arv;
+
+arv *a=NULL;
+int qtd_nos=0;
+
 
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
@@ -44,10 +51,46 @@ void converte_minusculo(char *palavra, int tam_palavra){
         palavra[i] = tolower(palavra[i]);
 }
 
-arv * novo_no(char *nome){
+arv * rot_dir(arv *p){
+    arv *q, *temp;
+    q = p->esq;
+    temp = q->dir;
+    q->dir = p;
+    p->esq = temp;
+    p = q;
+
+    return p;
+}
+
+arv * rot_esq(arv *p){
+    arv *q, *temp;
+    q = p->dir;
+    temp = q->esq;
+    q->esq = p;
+    p->dir = temp;
+    p = q;
+
+    return p;
+}
+
+arv * rot_esq_dir(arv *p){
+    p = rot_esq(p->esq);
+    p = rot_dir(p);
+
+    return p;
+}
+
+arv * rot_dir_esq(arv *p){
+    p = rot_dir(p->dir);
+    p = rot_esq(p);
+
+    return p;
+}
+
+arv * novo_no(char *palavra){
     arv *novo = (arv*)malloc(sizeof(arv));
 
-    strcpy(novo->info,nome);
+    strcpy(novo->info,palavra);
     novo->esq = NULL;
     novo->dir = NULL;
 
@@ -56,25 +99,59 @@ arv * novo_no(char *nome){
 
 int calcula_nivel(arv *r) {
    if (r == NULL)
-      return 0; // altura da árvore vazia
+      return -1; // altura da árvore vazia
    else {
       int he = calcula_nivel(r->esq);
       int hd = calcula_nivel(r->dir);
-      if (he < hd)
-        return hd + 1;
-      else
-        return he + 1;
+      if (he < hd) return hd + 1;
+      else return he + 1;
    }
+}
+
+void atualiza_fat(arv *p){
+    if(p){
+        p->fat = ((calcula_nivel(p->dir) + 1) - (calcula_nivel(p->esq) + 1));
+
+        atualiza_fat(p->dir);
+        atualiza_fat(p->esq);
+    }
 }
 
 arv * inserir(arv *p, arv *elemento){
     if(!p)
         return elemento;
     else{
-        if(elemento->info > p->info)
-            p->dir = inserir(p->dir, elemento);
-        else
-            p->esq = inserir(p->esq, elemento);
+        if(elemento->info > p->info){
+          p->dir = inserir(p->dir, elemento);
+          p = balanceia_arv(p);
+        }
+        else{
+          p->esq = inserir(p->esq, elemento);
+          p = balanceia_arv(p);
+        }
+            atualiza_fat(p);
+    }
+
+    return p;
+}
+
+arv * balanceia_arv(arv *p){
+    arv *temp;
+
+    if(p){
+        if(p->fat < -1){
+            if(p->esq->fat < 0)
+                p = rot_dir(p);
+            else
+                p = rot_esq_dir(p);
+        }
+        else if(p->fat > 1){
+            if(p->dir->fat > 0)
+                p = rot_esq(p);
+            else
+                p = rot_dir_esq(p);
+        }
+        atualiza_fat(p);
     }
 
     return p;
@@ -84,31 +161,55 @@ arv * inserir(arv *p, arv *elemento){
 bool carregaDicionario(const char *dicionario) {
     FILE *fd = fopen(dicionario,"r");
     char palavra[TAM_MAX];
-    arv *a;
+
+    if(fd == NULL){
+        printf("Nao foi possivel abrir o arquivo dicionario %s\n", dicionario);
+        return false;
+    }
 
     while(!feof(fd)){
         fscanf(fd,"%s",palavra);
         a = inserir(a,novo_no(palavra));
+        a = balanceia_arv(a);
     }
+
+    if(feof(fd))
+        return true;
 
     return false;
 } /* fim-carregaDicionario */
 
+int contador(arv *a){
+  if(a == NULL)
+      return 0;
+ else
+      return 1 + contador(a->esq) + contador(a->dir);
+
+    return 0;
+}
 
 /* Retorna qtde palavras do dicionario, se carregado; senao carregado retorna zero */
 unsigned int contaPalavrasDic(void) {
-
-    /* construa essa funcao */
-
-    return 0;
+  qtd_nos = contador(a);
+  return qtd_nos;
 } /* fim-contaPalavrasDic */
 
+arv *descarrega(arv *a){
+  if(a){
+      descarrega(a->esq);
+      descarrega(a->dir);
+      free(a);
+    }
+    return a;
+}
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
+  a = descarrega(a);
 
-    /* construa essa funcao */
-
+  if(a==NULL)
+    return true;
+  else
     return false;
 } /* fim-descarregaDicionario */
 

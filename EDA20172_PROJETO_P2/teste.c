@@ -111,19 +111,6 @@ arv * novo_no(int valor){
     return novo;
 }
 
-arv * inserir(arv *p, arv *elemento){
-    if(!p)
-        return elemento;
-    else{
-        if(elemento->info > p->info)
-            p->dir = inserir(p->dir, elemento);
-        else
-            p->esq = inserir(p->esq, elemento);
-    }
-
-    return p;
-}
-
 int calcula_nivel(arv *r) {
    if (r == NULL)
       return -1; // altura da árvore vazia
@@ -144,6 +131,20 @@ void atualiza_fat(arv *p){
     }
 }
 
+arv * inserir(arv *p, arv *elemento){
+    if(!p)
+        return elemento;
+    else{
+        if(elemento->info > p->info)
+            p->dir = inserir(p->dir, elemento);
+        else
+            p->esq = inserir(p->esq, elemento);
+            atualiza_fat(p);
+    }
+
+    return p;
+}
+
 arv * balanceia_arv(arv *p){
     arv *temp;
 
@@ -160,6 +161,7 @@ arv * balanceia_arv(arv *p){
             else
                 p = rot_dir_esq(p);
         }
+        atualiza_fat(p);
     }
 
     return p;
