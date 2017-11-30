@@ -34,22 +34,20 @@
 
 #define TAM_HASH 8000000
 
-typedef struct hash_table{
-    char palavra[TAM_MAX];
-    struct hash_table *prox;
-}HASH_TABLE;
+typedef struct conflito{
+    char nome[TAM_MAX];
+    struct conflito *esq;
+    struct conflito *dir;
+}CONF;
 
-unsigned int hashs[TAM_HASH];
+CONF *conflitos = NULL;
+
+bool *HASH_TABLE;
+
 unsigned int palavras_dic = 0;
-HASH_TABLE **hash_table;
 
-HASH_TABLE *adiciona_struct(HASH_TABLE *p, char *palavra){
-    HASH_TABLE *new = (HASH_TABLE*)malloc(sizeof(HASH_TABLE));
-
-    strcpy(new->palavra, palavra);
-    new->prox = p;
-
-    return new;
+void inicializa_hash(){
+    HASH_TABLE = (bool*)malloc(sizeof(bool) * TAM_HASH);
 }
 
 void converte_minusculo(char *palavra, int tam_palavra){
@@ -57,6 +55,40 @@ void converte_minusculo(char *palavra, int tam_palavra){
 
     for(i = 0; i < tam_palavra; i++)
         palavra[i] = tolower(palavra[i]);
+}
+
+CONF * novo_no(char *palavra){
+    CONF *novo = (CONF*)malloc(sizeof(CONF));
+
+    strcpy(novo->nome, palavra);
+    novo->esq = NULL;
+    novo->dir = NULL;
+
+    return novo;
+}
+
+CONF * insere_conflito(CONF *p, CONF *elemento){
+    if(!p)
+        return elemento;
+    else{
+        if(elemento->nome[0] > p->nome[0]){
+          p->dir = insere_conflito(p->dir, elemento);
+        }
+        else{
+          p->esq = insere_conflito(p->esq, elemento);
+        }
+    }
+
+    return p;
+}
+
+CONF * busca_conflito(CONF * a, char *palavra){
+    if((!a) || (strcasecmp(a->nome, palavra) == 0))
+        return a;
+    if(a->nome[0] > palavra[0])
+        return busca_conflito(a->esq, palavra);
+    else
+        return busca_conflito(a->dir, palavra);
 }
 
 /* Funcao de Hash */
@@ -76,38 +108,38 @@ unsigned int RSHash(const char* str, unsigned int len) {
 
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
+    CONF *aux = conflitos;
     unsigned int hash;
     unsigned int tam_string;
     char string[TAM_MAX];
-    HASH_TABLE *p;
 
     strcpy(string, palavra);
 
     tam_string = strlen(string);
     converte_minusculo(string, tam_string);
+
+    aux = busca_conflito(conflitos, string);
+
+    if(aux != NULL)
+        return true;
+
     hash = RSHash(string, tam_string) % TAM_HASH;
 
-    p = hash_table[hash];
-
-    while(p != NULL){
-        if(strcasecmp(p->palavra, palavra) == 0)
-            return true;
-
-        p = p->prox;
-    }
+    if(HASH_TABLE[hash] == true)
+        return true;
 
     return false;
 } /* fim-conferePalavra */
 
 /* Carrega dicionario na memoria. Retorna true se sucesso; senao retorna false. */
 bool carregaDicionario(const char *dicionario) {
+    inicializa_hash();
+
     FILE *fd = fopen(dicionario, "r");
     char palavra[TAM_MAX];
     unsigned int tam_palavra;
     unsigned int hash = 0;
     unsigned int i = 0;
-
-    hash_table = (HASH_TABLE**)malloc(sizeof(HASH_TABLE*)*TAM_HASH);
 
     if(fd == NULL){
         printf("Nao foi possivel abrir o arquivo dicionario %s\n", dicionario);
@@ -118,8 +150,12 @@ bool carregaDicionario(const char *dicionario) {
         fscanf(fd, "%s", palavra);
         tam_palavra = strlen(palavra);
         hash = RSHash(palavra, tam_palavra) % TAM_HASH;
-        hash_table[hash] = adiciona_struct(hash_table[hash], palavra);
-        hashs[palavras_dic] = hash;
+
+        if(HASH_TABLE[hash] == true)
+            conflitos = insere_conflito(conflitos, novo_no(palavra));
+        else
+            HASH_TABLE[hash] = true;
+
         palavras_dic++;
     }
 
@@ -138,23 +174,11 @@ unsigned int contaPalavrasDic(void) {
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
-    HASH_TABLE *p, *aux;
-    unsigned int i = 0;
+    free(HASH_TABLE);
 
-    while(i < palavras_dic){
-        p = hash_table[hashs[i]];
-        while(p != NULL){
-            aux = p->prox;
-            free(p);
-            p = aux;
-        }
-        i++;
-    }
+    HASH_TABLE = NULL;
 
-    if(i == palavras_dic)
-        return true;
-
-    return false;
+    return true;
 } /* fim-descarregaDicionario */
 
 /* Retorna o numero de segundos entre a e b */

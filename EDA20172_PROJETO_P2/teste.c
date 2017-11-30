@@ -9,6 +9,16 @@ typedef struct arv {
 
 #define espaco 5
 
+int capacidade_usada = 0;
+
+void calcula_capacidade_usada(arv *p){
+    if(p){
+        capacidade_usada++;
+        calcula_capacidade_usada(p->dir);
+        calcula_capacidade_usada(p->esq);
+    }
+}
+
 void desenha_arvore_horiz(arv *arvore, int depth, char *path, int dir){
     int i, j;
 
@@ -188,10 +198,13 @@ int main(){
     for(i = 0; i < qtd; i++){
         scanf("%d", &valor);
         raiz = inserir(raiz, novo_no(valor));
-        raiz = balanceia_arv(raiz);
     }
 
+    calcula_capacidade_usada(raiz);
+
+    printf("\nUsado: %d\n", capacidade_usada);
     draw_arvore_hor(raiz);
+    printf("\n");
 
     return 0;
 }
