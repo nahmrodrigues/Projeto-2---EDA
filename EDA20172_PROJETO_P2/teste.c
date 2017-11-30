@@ -3,7 +3,6 @@
 
 typedef struct arv {
     int info;
-    int fat;
     struct arv *esq;
     struct arv *dir;
 }arv;
@@ -122,46 +121,50 @@ int calcula_nivel(arv *r) {
    }
 }
 
-void atualiza_fat(arv *p){
+int fat_bal(arv *p){
+    int fat;
+
     if(p){
-        p->fat = ((calcula_nivel(p->dir) + 1) - (calcula_nivel(p->esq) + 1));
-
-        atualiza_fat(p->dir);
-        atualiza_fat(p->esq);
-    }
-}
-
-arv * inserir(arv *p, arv *elemento){
-    if(!p)
-        return elemento;
-    else{
-        if(elemento->info > p->info)
-            p->dir = inserir(p->dir, elemento);
-        else
-            p->esq = inserir(p->esq, elemento);
-            atualiza_fat(p);
+        fat = ((calcula_nivel(p->dir) + 1) - (calcula_nivel(p->esq) + 1));
+        return fat;
     }
 
-    return p;
+    return -1;
 }
 
 arv * balanceia_arv(arv *p){
     arv *temp;
 
     if(p){
-        if(p->fat < -1){
-            if(p->esq->fat < 0)
+        if(fat_bal(p) < -1){
+            if(fat_bal(p->esq) < 0)
                 p = rot_dir(p);
             else
                 p = rot_esq_dir(p);
         }
-        else if(p->fat > 1){
-            if(p->dir->fat > 0)
+        else if(fat_bal(p) > 1){
+            if(fat_bal(p->dir) > 0)
                 p = rot_esq(p);
             else
                 p = rot_dir_esq(p);
         }
-        atualiza_fat(p);
+    }
+
+    return p;
+}
+
+arv * inserir(arv *p, arv *elemento){
+    if(!p)
+        return elemento;
+    else{
+        if(elemento->info > p->info){
+          p->dir = inserir(p->dir, elemento);
+          p = balanceia_arv(p);
+        }
+        else{
+          p->esq = inserir(p->esq, elemento);
+          p = balanceia_arv(p);
+        }
     }
 
     return p;
@@ -185,10 +188,9 @@ int main(){
     for(i = 0; i < qtd; i++){
         scanf("%d", &valor);
         raiz = inserir(raiz, novo_no(valor));
+        raiz = balanceia_arv(raiz);
     }
 
-    draw_arvore_hor(raiz);
-    raiz = balanceia_arv(raiz);
     draw_arvore_hor(raiz);
 
     return 0;

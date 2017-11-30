@@ -5,8 +5,9 @@
  *********************************************************************************************/
 #include <ctype.h>
 #include <stdio.h>
-#include<stdlib.h>
-#include<string.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <stdbool.h>
@@ -28,28 +29,12 @@
 
 typedef struct arv {
     char info[TAM_MAX];
-    int fat;
     struct arv *esq;
     struct arv *dir;
 }arv;
 
-arv *a=NULL;
-int qtd_nos=0;
-
-
-/* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
-bool conferePalavra(const char *palavra) {
-
-
-    return false;
-} /* fim-conferePalavra */
-
-void converte_minusculo(char *palavra, int tam_palavra){
-    unsigned int i;
-
-    for(i = 0; i < tam_palavra; i++)
-        palavra[i] = tolower(palavra[i]);
-}
+arv *a = NULL;
+int qtd_nos = 0;
 
 arv * rot_dir(arv *p){
     arv *q, *temp;
@@ -90,7 +75,7 @@ arv * rot_dir_esq(arv *p){
 arv * novo_no(char *palavra){
     arv *novo = (arv*)malloc(sizeof(arv));
 
-    strcpy(novo->info,palavra);
+    strcpy(novo->info, palavra);
     novo->esq = NULL;
     novo->dir = NULL;
 
@@ -103,25 +88,50 @@ int calcula_nivel(arv *r) {
    else {
       int he = calcula_nivel(r->esq);
       int hd = calcula_nivel(r->dir);
-      if (he < hd) return hd + 1;
-      else return he + 1;
+      if (he < hd)
+        return hd + 1;
+      else
+        return he + 1;
    }
 }
 
-void atualiza_fat(arv *p){
-    if(p){
-        p->fat = ((calcula_nivel(p->dir) + 1) - (calcula_nivel(p->esq) + 1));
+int fat_bal(arv *p){
+    int fat;
 
-        atualiza_fat(p->dir);
-        atualiza_fat(p->esq);
+    if(p){
+        fat = ((calcula_nivel(p->dir) + 1) - (calcula_nivel(p->esq) + 1));
+        return fat;
     }
+
+    return -1;
+}
+
+arv * balanceia_arv(arv *p){
+    arv *temp;
+
+    if(p){
+        if(fat_bal(p) < -1){
+            if(fat_bal(p->esq) < 0)
+                p = rot_dir(p);
+            else
+                p = rot_esq_dir(p);
+        }
+        else if(fat_bal(p) > 1){
+            if(fat_bal(p->dir) > 0)
+                p = rot_esq(p);
+            else
+                p = rot_dir_esq(p);
+        }
+    }
+
+    return p;
 }
 
 arv * inserir(arv *p, arv *elemento){
     if(!p)
         return elemento;
     else{
-        if(elemento->info > p->info){
+        if(elemento->info[0] > p->info[0]){
           p->dir = inserir(p->dir, elemento);
           p = balanceia_arv(p);
         }
@@ -129,37 +139,45 @@ arv * inserir(arv *p, arv *elemento){
           p->esq = inserir(p->esq, elemento);
           p = balanceia_arv(p);
         }
-            atualiza_fat(p);
     }
 
     return p;
 }
 
-arv * balanceia_arv(arv *p){
-    arv *temp;
-
-    if(p){
-        if(p->fat < -1){
-            if(p->esq->fat < 0)
-                p = rot_dir(p);
-            else
-                p = rot_esq_dir(p);
-        }
-        else if(p->fat > 1){
-            if(p->dir->fat > 0)
-                p = rot_esq(p);
-            else
-                p = rot_dir_esq(p);
-        }
-        atualiza_fat(p);
+arv * descarrega(arv *a){
+    if(a){
+      descarrega(a->esq);
+      descarrega(a->dir);
+      free(a);
     }
 
-    return p;
+    return NULL;
 }
+
+bool busca_arv(arv *a, const char *palavra){
+    // if(a){
+    //     if(strcasecmp(a->info, palavra) == 0)
+    //         return true;
+    //     else if(a->info[0] > palavra[0])
+    //         return busca_arv(a->esq, palavra);
+    //     else
+    //         return busca_arv(a->dir, palavra);
+    // }
+
+    return false;
+}
+
+/* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
+bool conferePalavra(const char *palavra) {
+    if(busca_arv(a, palavra) == true)
+        return true;
+
+    return false;
+} /* fim-conferePalavra */
 
 /* Carrega dicionario na memoria. Retorna true se sucesso; senao retorna false. */
 bool carregaDicionario(const char *dicionario) {
-    FILE *fd = fopen(dicionario,"r");
+    FILE *fd = fopen(dicionario, "r");
     char palavra[TAM_MAX];
 
     if(fd == NULL){
@@ -169,8 +187,10 @@ bool carregaDicionario(const char *dicionario) {
 
     while(!feof(fd)){
         fscanf(fd,"%s",palavra);
-        a = inserir(a,novo_no(palavra));
+        a = inserir(a, novo_no(palavra));
         a = balanceia_arv(a);
+        printf("%s\n", palavra);
+        qtd_nos++;
     }
 
     if(feof(fd))
@@ -179,38 +199,22 @@ bool carregaDicionario(const char *dicionario) {
     return false;
 } /* fim-carregaDicionario */
 
-int contador(arv *a){
-  if(a == NULL)
-      return 0;
- else
-      return 1 + contador(a->esq) + contador(a->dir);
-
-    return 0;
-}
-
 /* Retorna qtde palavras do dicionario, se carregado; senao carregado retorna zero */
 unsigned int contaPalavrasDic(void) {
-  qtd_nos = contador(a);
-  return qtd_nos;
+    return qtd_nos;
 } /* fim-contaPalavrasDic */
-
-arv *descarrega(arv *a){
-  if(a){
-      descarrega(a->esq);
-      descarrega(a->dir);
-      free(a);
-    }
-    return a;
-}
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
-  a = descarrega(a);
+  // a = descarrega(a);
+  //
+  // if(!a)
+  //   return true;
+  // else
+  //   return false;
 
-  if(a==NULL)
-    return true;
-  else
-    return false;
+  return true;
+
 } /* fim-descarregaDicionario */
 
 /* Retorna o numero de segundos entre a e b */
