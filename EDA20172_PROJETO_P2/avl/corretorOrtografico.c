@@ -33,8 +33,38 @@ typedef struct arv {
     struct arv *dir;
 }arv;
 
-arv *a = NULL;
+arv *raiz = NULL;
 int qtd_nos = 0;
+
+void converte_minusculo(char *palavra, int tam_palavra){
+    unsigned int i;
+
+    for(i = 0; i < tam_palavra; i++)
+        palavra[i] = tolower(palavra[i]);
+}
+
+arv * descarrega(arv *p){
+    if(p){
+        descarrega(p->esq);
+        descarrega(p->dir);
+        free(p);
+    }
+
+    return NULL;
+}
+
+arv * arv_busca(arv *p, const char *palavra){
+    if(p){
+        if(strcasecmp(p->info, palavra) == 0)
+            return p;
+        else if(palavra[0] > p->info[0])
+            return arv_busca(p->dir, palavra);
+        else
+            return arv_busca(p->esq, palavra);
+    }
+
+    return NULL;
+}
 
 arv * rot_dir(arv *p){
     arv *q, *temp;
@@ -72,15 +102,6 @@ arv * rot_dir_esq(arv *p){
     return p;
 }
 
-arv * novo_no(char *palavra){
-    arv *novo = (arv*)malloc(sizeof(arv));
-
-    strcpy(novo->info, palavra);
-    novo->esq = NULL;
-    novo->dir = NULL;
-
-    return novo;
-}
 
 int calcula_nivel(arv *r) {
    if (r == NULL)
@@ -107,8 +128,6 @@ int fat_bal(arv *p){
 }
 
 arv * balanceia_arv(arv *p){
-    arv *temp;
-
     if(p){
         if(fat_bal(p) < -1){
             if(fat_bal(p->esq) < 0)
@@ -127,52 +146,48 @@ arv * balanceia_arv(arv *p){
     return p;
 }
 
+bool confere_arv(const char *palavra){
+    char string[TAM_MAX];
+    int tam_string;
+
+    strcpy(string, palavra);
+    tam_string = strlen(string);
+
+    converte_minusculo(string, tam_string);
+
+    if (arv_busca(raiz, string) != NULL)
+        return true;
+    else
+        return false;
+}
+
+arv * novo_no(char *palavra){
+    arv *novo = (arv*)malloc(sizeof(arv));
+
+    strcpy(novo->info, palavra);
+    novo->esq = NULL;
+    novo->dir = NULL;
+
+    return novo;
+}
+
+
 arv * inserir(arv *p, arv *elemento){
     if(!p)
         return elemento;
     else{
-        if(elemento->info[0] > p->info[0]){
-          p->dir = inserir(p->dir, elemento);
-          p = balanceia_arv(p);
-        }
-        else{
-          p->esq = inserir(p->esq, elemento);
-          p = balanceia_arv(p);
-        }
+        if(elemento->info[0] > p->info[0])
+            p->dir = inserir(p->dir, elemento);
+        else
+            p->esq = inserir(p->esq, elemento);
     }
 
     return p;
 }
 
-arv * descarrega(arv *a){
-    if(a){
-      descarrega(a->esq);
-      descarrega(a->dir);
-      free(a);
-    }
-
-    return NULL;
-}
-
-bool busca_arv(arv *a, const char *palavra){
-    // if(a){
-    //     if(strcasecmp(a->info, palavra) == 0)
-    //         return true;
-    //     else if(a->info[0] > palavra[0])
-    //         return busca_arv(a->esq, palavra);
-    //     else
-    //         return busca_arv(a->dir, palavra);
-    // }
-
-    return false;
-}
-
 /* Retorna true se a palavra estah no dicionario. Do contrario, retorna false */
 bool conferePalavra(const char *palavra) {
-    if(busca_arv(a, palavra) == true)
-        return true;
-
-    return false;
+    return confere_arv(palavra);
 } /* fim-conferePalavra */
 
 /* Carrega dicionario na memoria. Retorna true se sucesso; senao retorna false. */
@@ -187,11 +202,14 @@ bool carregaDicionario(const char *dicionario) {
 
     while(!feof(fd)){
         fscanf(fd,"%s",palavra);
-        a = inserir(a, novo_no(palavra));
-        a = balanceia_arv(a);
+        raiz = inserir(raiz, novo_no(palavra));
         printf("%s\n", palavra);
         qtd_nos++;
     }
+
+    raiz = balanceia_arv(raiz);
+
+    fclose(fd);
 
     if(feof(fd))
         return true;
@@ -206,12 +224,12 @@ unsigned int contaPalavrasDic(void) {
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
-  // a = descarrega(a);
-  //
-  // if(!a)
-  //   return true;
-  // else
-  //   return false;
+    raiz = descarrega(raiz);
+
+  if(!raiz)
+    return true;
+  else
+    return false;
 
   return true;
 
