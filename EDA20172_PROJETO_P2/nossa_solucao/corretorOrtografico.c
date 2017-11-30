@@ -91,6 +91,16 @@ CONF * busca_conflito(CONF * a, char *palavra){
         return busca_conflito(a->dir, palavra);
 }
 
+CONF * descarrega(CONF *p){
+    if(p){
+        descarrega(p->esq);
+        descarrega(p->dir);
+        free(p);
+    }
+
+    return NULL;
+}
+
 /* Funcao de Hash */
 unsigned int RSHash(const char* str, unsigned int len) {
     unsigned int b = 378551;
@@ -174,9 +184,8 @@ unsigned int contaPalavrasDic(void) {
 
 /* Descarrega dicionario da memoria. Retorna true se ok e false se algo deu errado */
 bool descarregaDicionario(void) {
+    conflitos = descarrega(conflitos);
     free(HASH_TABLE);
-
-    HASH_TABLE = NULL;
 
     return true;
 } /* fim-descarregaDicionario */
