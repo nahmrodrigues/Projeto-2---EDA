@@ -83,12 +83,16 @@ CONF * insere_conflito(CONF *p, CONF *elemento){
 }
 
 CONF * busca_conflito(CONF * a, char *palavra){
-    if((!a) || (strcasecmp(a->nome, palavra) == 0))
-        return a;
-    if(a->nome[0] > palavra[0])
-        return busca_conflito(a->esq, palavra);
-    else
-        return busca_conflito(a->dir, palavra);
+    if(a){
+        if(strcasecmp(a->nome, palavra) == 0)
+            return a;
+        if(palavra[0] > a->nome[0])
+            return busca_conflito(a->dir, palavra);
+        if(palavra[0] <= a->nome[0])
+            return busca_conflito(a->esq, palavra);
+    }
+
+    return NULL;
 }
 
 CONF * descarrega(CONF *p){
@@ -128,14 +132,16 @@ bool conferePalavra(const char *palavra) {
     tam_string = strlen(string);
     converte_minusculo(string, tam_string);
 
-    aux = busca_conflito(conflitos, string);
-
-    if(aux != NULL)
-        return true;
-
     hash = RSHash(string, tam_string) % TAM_HASH;
 
     if(HASH_TABLE[hash] == true)
+        return true;
+    else
+        return false;
+
+    aux = busca_conflito(aux, string);
+
+    if(aux != NULL)
         return true;
 
     return false;
